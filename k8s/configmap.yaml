@@ -1,0 +1,19 @@
+# Kubernetes ConfigMap 配置
+# 用于存储非敏感的配置信息
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  # JWT 算法
+  algorithm: "HS256"
+
+  # Token 过期时间（分钟）
+  access-token-expire-minutes: "10080"
+
+  # 日志级别
+  log-level: "info"
+
+  # 环境标识
+  environment: "production"

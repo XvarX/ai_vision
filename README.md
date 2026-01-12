@@ -27,6 +27,24 @@
 - Axios - HTTP 客户端
 - Lucide React - 图标库
 
+## 📦 部署
+
+**🚀 [部署中心](docs/DEPLOYMENT_INDEX.md)** - 查看所有部署方案和详细指南
+
+### 快速部署方案
+
+| 方案 | 难度 | 适用场景 | 指南 |
+|------|------|---------|------|
+| **Docker** | ⭐⭐ | 单机部署、国内用户 | [docker-compose up -d](docs/DEPLOYMENT.md#docker-部署推荐) |
+| **Vercel + Railway** | ⭐ | 零运维、国外用户 | [详细指南](docs/vercel.md) |
+| **Kubernetes** | ⭐⭐⭐⭐ | 企业级、高可用 | [详细指南](docs/k8s.md) |
+
+> 💡 **新手推荐**：从 [Docker 部署](docs/DEPLOYMENT.md) 开始
+
+> 📚 **更多文档**：[文档目录](docs/DOCS_STRUCTURE.md)
+
+---
+
 ## 快速开始
 
 ### 前置要求

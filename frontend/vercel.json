@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "name": "ai-vision-frontend",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "@backend-api-url"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_API_URL": "@backend-api-url"
+    }
+  },
+  "regions": ["hkg1", "sin1"],
+  "crons": []
+}

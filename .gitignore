@@ -93,3 +93,6 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+
+# Kubernetes secrets (DO NOT COMMIT)
+k8s/secrets.yaml
