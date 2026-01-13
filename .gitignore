@@ -39,7 +39,8 @@ ENV/
 
 # Environment variables
 .env
-.env.local
+backend/deployconfig/.env
+frontend/.env.local
 
 # Database
 *.db
@@ -95,4 +96,4 @@ Thumbs.db
 .cache/
 
 # Kubernetes secrets (DO NOT COMMIT)
-k8s/secrets.yaml
+deployconfig/k8s/secrets.yaml

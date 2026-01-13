@@ -62,10 +62,10 @@ pip install -r requirements.txt
 
 ### 配置环境变量
 
-复制 `backend/.env.example` 到 `backend/.env`：
+复制 `backend/config/.env.example` 到 `backend/.env`：
 
 ```bash
-cp backend/.env.example backend/.env
+cp backend/config/.env.example backend/.env
 ```
 
 编辑 `.env` 文件，设置你的配置：
@@ -89,10 +89,10 @@ npm install
 
 ### 配置前端环境
 
-复制 `frontend/.env.local.example` 到 `frontend/.env.local`：
+复制 `frontend/config/.env.local.example` 到 `frontend/.env.local`：
 
 ```bash
-cp frontend/.env.local.example frontend/.env.local
+cp frontend/config/.env.local.example frontend/.env.local
 ```
 
 ### 启动服务

@@ -1,13 +1,9 @@
-# 基础依赖
+# 基础依赖（从开发环境继承）
 -r requirements.txt
 
 # 生产环境依赖
 gunicorn>=21.0.0
-uvicorn[standard]>=0.24.0
 
 # 监控和性能
 psycopg2-binary>=2.9.0  # PostgreSQL 驱动
 sentry-sdk[fastapi]>=1.40.0  # 错误监控（可选）
-
-# 安全
-python-multipart>=0.0.6

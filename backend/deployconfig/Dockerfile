@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制并安装 Python 依赖
-COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+COPY deployconfig/requirements_prod.txt .
+RUN pip install --no-cache-dir --user -r requirements_prod.txt
 
 # 运行阶段
 FROM python:3.11-slim
@@ -40,4 +40,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"
 
 # 使用 gunicorn 启动（生产环境）
-CMD ["gunicorn", "app.main:app", "-c", "gunicorn.conf.py"]
+CMD ["gunicorn", "app.main:app", "-c", "deployconfig/gunicorn.conf.py"]
