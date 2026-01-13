@@ -6,20 +6,23 @@
 
 ```
 backend/deployconfig/
-├── .env.example           # 环境变量模板
-├── Dockerfile             # 生产环境 Docker 镜像
-├── gunicorn.conf.py       # Gunicorn 配置（生产环境）
-├── requirements.txt       # 开发环境依赖
-├── requirements_prod.txt  # 生产环境依赖
-└── README.md              # 本文件
+├── .env.develop.example       # 开发环境变量模板
+├── .env.prodlocal.example     # 本地生产环境变量模板
+├── Dockerfile                 # 生产环境 Docker 镜像
+├── gunicorn.conf.py           # Gunicorn 配置（生产环境）
+├── requirements.txt           # 开发环境依赖
+├── requirements_prod.txt      # 生产环境依赖
+└── README.md                  # 本文件
 ```
 
 ## 文件说明
 
 ### 环境变量
-- **.env.example**: 环境变量模板
-  - 开发环境：使用 SQLite
-  - 生产环境：修改为 PostgreSQL
+- **.env.develop.example**: 开发环境变量模板
+  - 使用 SQLite 数据库
+- **.env.prodlocal.example**: 本地生产环境变量模板
+  - 使用 PostgreSQL 数据库
+  - 强密钥配置
 - **.env**: 实际使用的环境变量（不提交到 Git）
 
 ### 依赖
@@ -42,8 +45,8 @@ cd backend
 # 安装依赖
 pip install -r deployconfig/requirements.txt
 
-# 配置环境变量
-cp deployconfig/.env.example deployconfig/.env
+# 配置环境变量（开发环境）
+cp deployconfig/.env.develop.example deployconfig/.env
 
 # 运行开发服务器
 python -m uvicorn app.main:app --reload
@@ -61,4 +64,15 @@ gunicorn app.main:app -c backend/deployconfig/gunicorn.conf.py
 
 ## 环境变量说明
 
-参见 `.env.example` 文件中的注释。
+### 开发环境
+参见 `.env.develop.example` 文件：
+- DATABASE_URL: SQLite 数据库路径
+- SECRET_KEY: JWT 密钥
+- ALGORITHM: 加密算法
+- ACCESS_TOKEN_EXPIRE_MINUTES: Token 过期时间
+
+### 生产环境
+参见 `.env.prodlocal.example` 文件：
+- DATABASE_URL: PostgreSQL 连接字符串
+- SECRET_KEY: 强随机密钥（生产环境必须修改）
+- 其他配置同开发环境
