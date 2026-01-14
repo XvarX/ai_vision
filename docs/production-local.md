@@ -353,6 +353,90 @@ sudo systemctl reload nginx
 
 **Windows**：将配置复制到 `nginx.conf` 并重启 Nginx
 
+### 4. Nginx 配置说明
+
+**配置文件已包含的优化**：
+
+#### Gzip 压缩
+```nginx
+gzip on;
+gzip_vary on;
+gzip_min_length 1024;
+gzip_types text/plain text/css text/xml text/javascript
+           application/x-javascript application/xml+rss
+           application/json application/javascript;
+```
+- 减少传输数据大小，提升加载速度
+- 对文本文件压缩效果明显（HTML、CSS、JS）
+
+#### 静态资源缓存
+```nginx
+location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+    proxy_pass http://127.0.0.1:3000;
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+}
+```
+- 静态资源缓存 1 年，减少重复请求
+- `immutable` 告诉浏览器资源不会改变
+
+#### WebSocket 支持
+```nginx
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection 'upgrade';
+```
+- 支持实时通信（如 WebSocket）
+
+### 5. HTTPS 配置（可选）
+
+**注意**：本地生产环境如果不需要外网访问，可以跳过 HTTPS 配置。
+
+#### 使用 Let's Encrypt（免费 SSL 证书）
+
+**Ubuntu**：
+
+```bash
+# 安装 Certbot
+sudo apt install certbot python3-certbot-nginx
+
+# 获取证书（需要域名）
+sudo certbot --nginx -d www.yourdomain.com -d yourdomain.com
+
+# 自动续期
+sudo certbot renew --dry-run
+```
+
+证书会自动配置到 Nginx。
+
+#### 手动配置 SSL
+
+如果已有证书，修改 Nginx 配置：
+
+```nginx
+# HTTPS - 前端
+server {
+    listen 443 ssl http2;
+    server_name www.yourdomain.com;
+
+    ssl_certificate /path/to/certificate.crt;
+    ssl_certificate_key /path/to/private.key;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # ... 其他配置同 HTTP
+}
+
+# HTTP 自动跳转 HTTPS
+server {
+    listen 80;
+    server_name www.yourdomain.com;
+    return 301 https://$server_name$request_uri;
+}
+```
+
+**本地测试**：可以使用自签名证书（浏览器会警告，但功能可用）
+
 ---
 
 ## 前端部署
@@ -421,43 +505,52 @@ npm run start
 npm install -g pm2
 ```
 
-#### 创建后端启动文件
+#### 后端 PM2 配置
 
-创建 `backend/ecosystem.config.cjs`：
+项目已提供后端 PM2 配置文件：`backend/deployconfig/ecosystem.config.cjs`
 
-```javascript
-module.exports = {
-  apps: [{
-    name: 'ai-vision-backend',
-    script: 'venv/Scripts/gunicorn.exe',  // Windows
-    // script: 'venv/bin/gunicorn',     // Linux/Mac
-    args: 'app.main:app -c deployconfig/gunicorn.conf.py',
-    cwd: './backend',
-    instances: 1,
-    autorestart: true,
-    watch: false,
-    max_memory_restart: '1G',
-    env: {
-      NODE_ENV: 'production'
-    }
-  }]
-};
-```
+**配置说明**：
+- `script`: Gunicorn 执行路径
+  - Windows: `venv/Scripts/gunicorn.exe`
+  - Linux/Mac: `venv/bin/gunicorn`（取消注释并注释掉 Windows 行）
+- `args`: Gunicorn 启动参数
+- `cwd`: 工作目录（相对于项目根目录）
+- `instances`: 进程实例数
+- `autorestart`: 自动重启
+- `max_memory_restart`: 内存超过 1G 时重启
 
 #### 启动后端
 
 ```bash
-cd backend
-pm2 start ecosystem.config.cjs
+# 使用配置文件启动
+pm2 start backend/deployconfig/ecosystem.config.cjs
+
+# 保存进程列表
 pm2 save
+
+# 设置开机自启
 pm2 startup
 ```
+
+#### 前端 PM2 配置
+
+项目已提供前端 PM2 配置文件：`frontend/deployconfig/ecosystem.config.cjs`
+
+**配置说明**：
+- `script`: 使用 `npm` 命令
+- `args`: 执行 `npm start`（启动生产环境构建）
+- `cwd`: 工作目录（相对于项目根目录）
+- `instances`: 进程实例数
+- `autorestart`: 自动重启
+- `max_memory_restart`: 内存超过 1G 时重启
 
 #### 启动前端
 
 ```bash
-cd frontend
-pm2 start npm --name "ai-vision-frontend" -- start
+# 使用配置文件启动
+pm2 start frontend/deployconfig/ecosystem.config.cjs
+
+# 保存进程列表
 pm2 save
 ```
 
@@ -556,86 +649,6 @@ sudo tail -f /var/log/nginx/error.log
 
 ---
 
-## HTTPS 配置（推荐）
-
-### 使用 Let's Encrypt（免费 SSL 证书）
-
-#### Ubuntu
-
-```bash
-# 安装 Certbot
-sudo apt install certbot python3-certbot-nginx
-
-# 获取证书
-sudo certbot --nginx -d www.yourdomain.com -d yourdomain.com
-
-# 自动续期
-sudo certbot renew --dry-run
-```
-
-证书会自动配置到 Nginx。
-
-### 手动配置 SSL
-
-如果已有证书，修改 Nginx 配置：
-
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name www.yourdomain.com;
-
-    ssl_certificate /path/to/certificate.crt;
-    ssl_certificate_key /path/to/private.key;
-
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        # ... 其他配置
-    }
-}
-
-# HTTP 自动跳转 HTTPS
-server {
-    listen 80;
-    server_name www.yourdomain.com;
-    return 301 https://$server_name$request_uri;
-}
-```
-
----
-
-## 性能优化
-
-### 1. 启用 Gzip（Nginx）
-
-```nginx
-gzip on;
-gzip_vary on;
-gzip_min_length 1024;
-gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
-```
-
-### 2. 静态资源缓存
-
-```nginx
-location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-}
-```
-
-### 3. 后端工作进程数
-
-编辑 `backend/deployconfig/gunicorn.conf.py`：
-
-```python
-workers = multiprocessing.cpu_count() * 2 + 1
-```
-
----
-
 ## 监控和维护
 
 ### 1. 监控服务状态
@@ -647,6 +660,18 @@ pm2 monit
 # 查看系统资源
 htop
 ```
+
+### 2. 后端工作进程数优化
+
+编辑 `backend/deployconfig/gunicorn.conf.py`：
+
+```python
+workers = multiprocessing.cpu_count() * 2 + 1
+```
+
+根据服务器 CPU 核心数调整 worker 进程数。
+
+---
 
 ### 2. 日志轮转
 

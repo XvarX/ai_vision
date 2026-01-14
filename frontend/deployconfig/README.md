@@ -11,6 +11,7 @@ frontend/
 │   ├── .env.local.example  # 环境变量模板
 │   ├── .env.vercel.example # Vercel 环境变量
 │   ├── Dockerfile          # Docker 镜像
+│   ├── ecosystem.config.cjs# PM2 进程管理配置
 │   ├── vercel.json         # Vercel 配置
 │   └── README.md
 ├── package.json            # 依赖
@@ -27,6 +28,7 @@ frontend/
 ### 部署配置
 - **deployconfig/Dockerfile**: 生产环境 Docker 镜像
 - **deployconfig/vercel.json**: Vercel 平台部署配置
+- **deployconfig/ecosystem.config.cjs**: PM2 进程管理配置（推荐用于生产环境）
 
 ## 使用说明
 
@@ -57,6 +59,33 @@ vercel
 
 在 Vercel 控制台设置环境变量：
 - `NEXT_PUBLIC_API_URL`: 后端 API 地址
+
+### 本地生产环境（使用 PM2）
+
+```bash
+cd frontend
+
+# 安装依赖
+npm install
+
+# 配置环境变量
+cp deployconfig/.env.local.example .env.local
+
+# 构建生产版本
+npm run build
+
+# 使用 PM2 启动
+pm2 start deployconfig/ecosystem.config.cjs
+pm2 save
+pm2 startup
+```
+
+**PM2 配置说明**：
+- `script`: 使用 `npm` 命令
+- `args`: 执行 `npm start`（启动生产环境构建）
+- `cwd`: 工作目录
+- `autorestart`: 自动重启
+- `max_memory_restart`: 内存超过 1G 时重启
 
 ### Docker 部署
 

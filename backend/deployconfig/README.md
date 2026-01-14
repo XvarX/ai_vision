@@ -9,6 +9,7 @@ backend/deployconfig/
 ├── .env.develop.example       # 开发环境变量模板
 ├── .env.prodlocal.example     # 本地生产环境变量模板
 ├── Dockerfile                 # 生产环境 Docker 镜像
+├── ecosystem.config.cjs       # PM2 进程管理配置
 ├── gunicorn.conf.py           # Gunicorn 配置（生产环境）
 ├── requirements.txt           # 开发环境依赖
 ├── requirements_prod.txt      # 生产环境依赖
@@ -34,6 +35,7 @@ backend/deployconfig/
 
 ### 服务器
 - **gunicorn.conf.py**: 生产环境进程管理器配置
+- **ecosystem.config.cjs**: PM2 进程管理配置（推荐用于生产环境）
 
 ## 使用说明
 
