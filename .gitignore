@@ -10,15 +10,16 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# 只忽略 Python 的 lib/ 目录（根目录下的），不忽略前端的 lib
+/lib/
+/lib64/
 parts/
 sdist/
 var/
 wheels/
 *.egg-info/
 .installed.cfg
-*.egg
+.egg
 MANIFEST
 
 # Virtual Environment
