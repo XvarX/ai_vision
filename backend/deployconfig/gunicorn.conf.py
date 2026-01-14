@@ -23,7 +23,7 @@ loglevel = "info"
 # Server mechanics
 daemon = False  # 在 Docker/supervisor 中运行时设为 False
 pidfile = "/tmp/gunicorn.pid"
-umask = 007
+umask = 0o007  # Python 3.8+ 需要 0o 前缀表示八进制
 user = None
 
 # Server hooks

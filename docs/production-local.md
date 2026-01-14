@@ -237,7 +237,7 @@ loglevel = "info"           # 日志级别
 # Server mechanics - 服务器机制
 daemon = False              # 是否以守护进程运行（PM2/systemd 管理时应设为 False）
 pidfile = "/tmp/gunicorn.pid"  # PID 文件位置
-umask = 007                 # 文件权限掩码
+umask = 0o007                 # 文件权限掩码
 user = None                 # 运行用户（None 表示当前用户）
 
 # Server hooks - 服务器钩子函数
@@ -307,6 +307,7 @@ sudo systemctl enable nginx
 
 ```bash
 # 复制配置文件
+进入ai_vision根目录
 sudo cp deployconfig/nginx-local.conf /etc/nginx/sites-available/ai-vision
 
 # 创建软链接
@@ -336,24 +337,7 @@ sudo systemctl reload nginx
     - Linux/Mac: `ip addr show` 或 `ifconfig`
 - 统一入口：`http://localhost/api/`（通过前端 80 端口访问后端）
 
-### 3. 启用配置
-
-**Ubuntu**：
-
-```bash
-# 创建软链接
-sudo ln -s /etc/nginx/sites-available/ai-vision /etc/nginx/sites-enabled/
-
-# 测试配置
-sudo nginx -t
-
-# 重载 Nginx
-sudo systemctl reload nginx
-```
-
-**Windows**：将配置复制到 `nginx.conf` 并重启 Nginx
-
-### 4. Nginx 配置说明
+### 3. Nginx 配置说明
 
 **配置文件已包含的优化**：
 
@@ -387,7 +371,7 @@ proxy_set_header Connection 'upgrade';
 ```
 - 支持实时通信（如 WebSocket）
 
-### 5. HTTPS 配置（可选）
+### 4. HTTPS 配置（可选）
 
 **注意**：本地生产环境如果不需要外网访问，可以跳过 HTTPS 配置。
 
