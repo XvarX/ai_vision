@@ -1,21 +1,28 @@
 # 多阶段构建 - 优化镜像大小
-FROM python:3.11-slim as builder
+FROM docker.m.daocloud.io/python:3.11-slim as builder
 
 WORKDIR /app
 
-# 安装编译依赖
-RUN apt-get update && apt-get install -y \
+# 配置 apt 使用阿里云镜像源并安装编译依赖
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制并安装 Python 依赖
-COPY deployconfig/requirements_prod.txt .
-RUN pip install --no-cache-dir --user -r requirements_prod.txt
+COPY backend/deployconfig/requirements*.txt .
+RUN pip install --no-cache-dir --user -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements_prod.txt
 
 # 运行阶段
-FROM python:3.11-slim
+FROM docker.m.daocloud.io/python:3.11-slim
 
 WORKDIR /app
+
+# 配置 apt 使用阿里云镜像源并安装运行时依赖
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # 从 builder 阶段复制已安装的包
 COPY --from=builder /root/.local /root/.local
@@ -35,9 +42,9 @@ USER appuser
 # 暴露端口
 EXPOSE 8000
 
-# 健康检查
+# 健康检查（使用 curl）
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"
+    CMD curl -f http://localhost:8000/health || exit 1
 
 # 使用 gunicorn 启动（生产环境）
 CMD ["gunicorn", "app.main:app", "-c", "deployconfig/gunicorn.conf.py"]

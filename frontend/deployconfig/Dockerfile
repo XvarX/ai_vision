@@ -1,16 +1,17 @@
 # 多阶段构建
-FROM node:18-alpine as builder
+FROM docker.m.daocloud.io/node:18-alpine as builder
 
 WORKDIR /app
 
 # 复制 package 文件
-COPY package*.json ./
+COPY frontend/package*.json ./
 
-# 安装依赖
-RUN npm ci
+# 配置 npm 使用国内镜像源并安装依赖
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm ci
 
 # 复制源代码
-COPY . .
+COPY frontend/ .
 
 # 设置生产环境
 ENV NODE_ENV=production
@@ -19,7 +20,7 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # 生产阶段
-FROM node:18-alpine
+FROM docker.m.daocloud.io/node:18-alpine
 
 WORKDIR /app
 
