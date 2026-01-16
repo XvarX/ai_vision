@@ -3,6 +3,10 @@ FROM docker.m.daocloud.io/node:18-alpine as builder
 
 WORKDIR /app
 
+# 定义构建参数，用于接收环境变量
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 # 复制 package 文件
 COPY frontend/package*.json ./
 
@@ -24,8 +28,9 @@ FROM docker.m.daocloud.io/node:18-alpine
 
 WORKDIR /app
 
-# 复制公共文件和构建产物
-COPY --from=builder /app/public ./public
+# 复制构建产物
+# 注意：standalone 模式下，.next/standalone 包含了运行所需的所有文件
+# 如果存在 public 目录，也复制过来（可选）
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 

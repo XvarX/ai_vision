@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(test:*)",
-      "Bash(docker-compose:*)"
+      "Bash(docker-compose:*)",
+      "Bash(docker run:*)",
+      "Bash(docker pull:*)",
+      "Bash(docker logs:*)",
+      "Bash(curl:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker images:*)"
     ]
   }
 }

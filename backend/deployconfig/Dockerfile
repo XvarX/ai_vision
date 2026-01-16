@@ -11,7 +11,7 @@ RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debia
 
 # 复制并安装 Python 依赖
 COPY backend/deployconfig/requirements*.txt .
-RUN pip install --no-cache-dir --user -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements_prod.txt
+RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements_prod.txt
 
 # 运行阶段
 FROM docker.m.daocloud.io/python:3.11-slim
@@ -24,20 +24,12 @@ RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debia
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# 从 builder 阶段复制已安装的包
-COPY --from=builder /root/.local /root/.local
+# 从 builder 阶段复制已安装的 Python 包
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
-# 复制应用代码
-COPY . .
-
-# 确保脚本在 PATH 中
-ENV PATH=/root/.local/bin:$PATH
-
-# 创建非 root 用户
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
-
-USER appuser
+# 复制应用代码（只复制 backend 目录）
+COPY backend/ .
 
 # 暴露端口
 EXPOSE 8000
