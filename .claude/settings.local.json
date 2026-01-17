@@ -10,7 +10,13 @@
       "Bash(docker ps:*)",
       "Bash(docker exec:*)",
       "Bash(docker inspect:*)",
-      "Bash(docker images:*)"
+      "Bash(docker images:*)",
+      "Skill(skill-lookup)",
+      "Skill(skill-lookup:*)",
+      "Bash(mcp call:*)",
+      "Bash(npm run build)",
+      "Bash(npx next lint:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
