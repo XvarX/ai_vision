@@ -16,7 +16,9 @@
       "Bash(mcp call:*)",
       "Bash(npm run build)",
       "Bash(npx next lint:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(del:*)",
+      "Bash(ren:*)"
     ]
   }
 }
