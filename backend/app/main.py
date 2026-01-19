@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
@@ -46,3 +46,36 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/api")
+def list_api_routes(request: Request):
+    """
+    自动获取所有 API 路由列表
+    当添加新的路由时，会自动出现在这个列表中
+    """
+    app = request.app
+    routes = []
+
+    for route in app.routes:
+        # 排除健康检查、文档等非 API 路由
+        if hasattr(route, 'path') and hasattr(route, 'methods'):
+            # 只包含 /api 开头的路径和根路径
+            if route.path.startswith('/api') or route.path == '/':
+                # 排除 /api 自身
+                if route.path != '/api':
+                    routes.append({
+                        "path": route.path,
+                        "methods": list(route.methods),
+                        "name": getattr(route, 'name', 'unknown')
+                    })
+
+    return {
+        "message": "AI Vision Novel Platform API",
+        "version": settings.VERSION,
+        "total_endpoints": len(routes),
+        "endpoints": routes,
+        "docs": "/docs",
+        "redoc": "/redoc",
+        "openapi": "/openapi.json"
+    }

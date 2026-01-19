@@ -21,7 +21,9 @@
       "Bash(ren:*)",
       "Bash(mcp-run prompts-chat search_skills:*)",
       "Bash(claude-code skills list:*)",
-      "Bash(dir e:spacelabspaceai_visionbackenddeployconfigdocker)"
+      "Bash(dir e:spacelabspaceai_visionbackenddeployconfigdocker)",
+      "Bash(docker compose:*)",
+      "Bash(python:*)"
     ]
   }
 }
