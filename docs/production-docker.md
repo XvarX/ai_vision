@@ -118,6 +118,8 @@ docker compose version
 
 ### Docker Compose 服务架构
 
+#### 默认架构（单实例）
+
 项目使用 4 个容器：
 
 ```
@@ -139,27 +141,63 @@ docker compose version
                         └──────────┘
 ```
 
+#### 多实例架构（支持负载均衡）
+
+支持动态扩展多个前端和后端实例：
+
+```
+┌─────────────────────────────────────────┐
+│              Nginx (80/8080)            │
+│      负载均衡 + 会话保持 + 健康检查        │
+└───┬─────────────┬─────────────┬─────────┘
+    │             │             │
+    │             │             │
+┌───▼────┐   ┌───▼────┐   ┌───▼────┐   ┌─────┐
+│Frontend│   │Frontend│   │Backend │   │ DB  │
+│ (3000) │   │ (3000) │   │ (8000) │   │(5432)│
+└────────┘   └────────┘   └────┬───┘   └─────┘
+                                │
+                            ┌───▼────┐
+                            │Backend │
+                            │ (8000) │
+                            └────────┘
+```
+
+**启动多实例**：
+```bash
+# 启动 2 个前端 + 2 个后端实例
+docker compose up -d --scale frontend=2 --scale backend=2
+```
+
+> 📖 详细的负载均衡配置说明，请参考 [负载均衡配置文档](../deployconfig/docker/LOAD_BALANCING.md)
+
 ### 服务说明
 
 | 服务 | 容器名 | 端口 | 说明 |
 |------|--------|------|------|
-| **Nginx** | ai_vision_nginx | 80, 8080 | 反向代理，统一入口 |
-| **Frontend** | ai_vision_frontend | 3000 | Next.js 前端应用 |
-| **Backend** | ai_vision_backend | 8000 | FastAPI 后端 API |
+| **Nginx** | ai_vision_nginx | 80, 8080 | 反向代理 + 负载均衡 |
+| **Frontend** | ai_vision_frontend | 3000 | Next.js 前端应用（可扩展） |
+| **Backend** | ai_vision_backend | 8000 | FastAPI 后端 API（可扩展） |
 | **Database** | ai_vision_db | 5432 | PostgreSQL 数据库 |
+
+### 负载均衡策略
+
+- **后端**：IP 哈希（IP Hash）- 会话保持，同一客户端 IP 总是访问同一后端实例
+- **前端**：最少连接（Least Connections）- 优先转发到连接数最少的实例
+- **健康检查**：自动检测实例健康状态，自动剔除故障实例
 
 ### 端口映射
 
 - **80** → Nginx → Frontend (前端访问)
 - **8080** → Nginx → Backend (后端 API 访问)
 - **443** → Nginx → HTTPS (可选)
-- **3000** → Frontend (内部通信，可选)
-- **8000** → Backend (内部通信，可选)
+- **3000** → Frontend (内部通信)
+- **8000** → Backend (内部通信)
 - **5432** → PostgreSQL (内部通信)
 
 ### 网络配置
 
-所有容器运行在 `ai_vision_network` 桥接网络中，可以互相通信。
+所有容器运行在 `ai_vision_network` 桥接网络中，可以互相通信。Docker 内置 DNS 自动发现服务实例。
 
 ### 健康检查
 

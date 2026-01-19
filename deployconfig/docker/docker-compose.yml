@@ -1,3 +1,9 @@
+# Docker Compose 配置 - 支持多实例负载均衡
+# 使用方法：
+# 1. 复制 .env.docker.example 为 .env 并修改配置
+# 2. 启动服务：docker compose up -d
+# 3. 扩展实例：docker compose up -d --scale backend=3 --scale frontend=2
+
 services:
   # PostgreSQL 数据库 - 使用国内镜像
   db:
@@ -10,9 +16,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U aivision"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aivision}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -20,20 +26,20 @@ services:
     networks:
       - ai_vision_network
 
-  # FastAPI 后端
+  # FastAPI 后端 - 支持多实例
   backend:
     build:
       context: ../..
       dockerfile: backend/deployconfig/Dockerfile
-    container_name: ai_vision_backend
+    # 移除 container_name 以支持多实例
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-aivision}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-aivision}
       SECRET_KEY: ${SECRET_KEY}
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 10080
     # 不需要暴露 8000 端口到宿主机，通过 nginx 访问
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       db:
         condition: service_healthy
@@ -47,16 +53,16 @@ services:
     networks:
       - ai_vision_network
 
-  # Next.js 前端
+  # Next.js 前端 - 支持多实例
   frontend:
     build:
       context: ../..
       dockerfile: frontend/deployconfig/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8080  # 构建时使用 localhost，浏览器可访问
-    container_name: ai_vision_frontend
-    ports:
-      - "3000:3000"
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    # 移除 container_name 以支持多实例
+    expose:
+      - "3000"
     depends_on:
       backend:
         condition: service_healthy
@@ -64,16 +70,17 @@ services:
     networks:
       - ai_vision_network
 
-  # Nginx 反向代理 - 使用国内镜像
+  # Nginx 反向代理 - 负载均衡
   nginx:
     image: docker.m.daocloud.io/nginx:alpine
     container_name: ai_vision_nginx
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.conf.d:/etc/nginx/conf.d:ro
     ports:
-      - "80:80"
-      - "8080:8080"  # 映射 8080 端口
-      - "443:443"
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_API_PORT:-8080}:8080"
+      - "${NGINX_HTTPS_PORT:-443}:443"
     depends_on:
       - backend
       - frontend
