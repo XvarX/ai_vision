@@ -9,16 +9,18 @@
 - 🔀 **分支合并**：分支作者可以提交分支，主作者审核后可接纳为正史
 - 👥 **用户系统**：完整的用户注册、登录、认证系统
 - 📱 **响应式设计**：支持桌面和移动设备
+- ⚡ **负载均衡**：支持多实例部署，自动健康检查和故障转移
 
 ## 技术栈
 
 ### 后端
-- Python 3.x
+- Python 3.11
 - FastAPI - 现代化的 Web 框架
 - SQLAlchemy 2.0 - ORM
-- SQLite - 开发数据库
+- PostgreSQL - 生产数据库（SQLite 开发）
 - JWT - 用户认证
 - Argon2 - 密码哈希
+- Gunicorn - WSGI 服务器
 
 ### 前端
 - Next.js 15 - React 框架
@@ -27,125 +29,96 @@
 - Axios - HTTP 客户端
 - Lucide React - 图标库
 
+### 部署
+- Docker & Docker Compose - 容器化部署
+- Nginx - 反向代理和负载均衡
+- 支持多实例扩展和会话保持
+
 ## 📦 部署
 
-**🚀 [部署中心](docs/DEPLOYMENT_INDEX.md)** - 查看所有部署方案和详细指南
+**📚 [查看部署文档](docs/)** - 完整的部署指南和配置说明
 
-### 快速部署方案
+### 部署方案
 
 | 方案 | 难度 | 适用场景 | 指南 |
 |------|------|---------|------|
-| **Docker** | ⭐⭐ | 单机部署、国内用户 | [docker-compose up -d](docs/DEPLOYMENT.md#docker-部署推荐) |
-| **Vercel + Railway** | ⭐ | 零运维、国外用户 | [详细指南](docs/vercel.md) |
-| **Kubernetes** | ⭐⭐⭐⭐ | 企业级、高可用 | [详细指南](docs/k8s.md) |
+| **开发环境** | ⭐ | 本地开发、学习 | [开发部署文档](docs/development.md) |
+| **本地生产** | ⭐⭐ | 本地服务器、小型部署 | [本地生产部署](docs/production-local.md) |
+| **Docker 部署** | ⭐⭐ | 生产环境、推荐方案 | [Docker 部署文档](docs/production-docker.md) |
 
-> 💡 **新手推荐**：从 [Docker 部署](docs/DEPLOYMENT.md) 开始
+### 本地开发
 
-> 📚 **更多文档**：[文档目录](docs/DOCS_STRUCTURE.md)
-
----
-
-## 快速开始
-
-### 前置要求
-
-- Python 3.8+
-- Node.js 18+
-- npm 或 yarn
-
-### 后端安装
+如果你是开发者，想修改代码并调试：
 
 ```bash
+# 1. 安装后端依赖
 cd backend
-pip install -r requirements.txt
-```
+pip install -r deployconfig/requirements.txt
 
-### 配置环境变量
+# 2. 配置环境变量
+cp deployconfig/.env.example deployconfig/.env
+nano deployconfig/.env
 
-复制 `backend/config/.env.example` 到 `backend/.env`：
+# 3. 启动后端
+python -m uvicorn app.main:app --reload
 
-```bash
-cp backend/config/.env.example backend/.env
-```
-
-编辑 `.env` 文件，设置你的配置：
-
-```env
-# Database
-DATABASE_URL=sqlite:///./ai_vision.db
-
-# Security
-SECRET_KEY=your-secret-key-here  # 生产环境请使用强密钥
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=10080
-```
-
-### 前端安装
-
-```bash
+# 4. 安装前端依赖（新终端）
 cd frontend
 npm install
-```
 
-### 配置前端环境
+# 5. 配置前端环境
+cp deployconfig/.env.local.example .env.local
 
-复制 `frontend/config/.env.local.example` 到 `frontend/.env.local`：
-
-```bash
-cp frontend/config/.env.local.example frontend/.env.local
-```
-
-### 启动服务
-
-#### 方式一：使用重启脚本（Windows）
-
-```bash
-restart.bat
-```
-
-#### 方式二：手动启动
-
-**启动后端：**
-```bash
-cd backend
-python -m uvicorn app.main:app --reload
-```
-
-**启动前端：**
-```bash
-cd frontend
+# 6. 启动前端
 npm run dev
 ```
 
-### 访问应用
+访问 http://localhost:3000
 
-- 前端：http://localhost:3000
-- 后端 API：http://localhost:8000
-- API 文档：http://localhost:8000/docs
+> 📚 **详细指南**：[开发环境部署文档](docs/development.md)
 
 ## API 文档
 
-启动后端后，访问 http://localhost:8000/docs 查看完整的 API 文档（Swagger UI）。
+- **Swagger UI**: http://localhost:8080/docs
+- **ReDoc**: http://localhost:8080/redoc
+- **OpenAPI JSON**: http://localhost:8080/openapi.json
+- **API 列表**: http://localhost:8080/api
 
 ## 项目结构
 
 ```
 ai_vision/
-├── backend/                 # 后端代码
+├── backend/                     # 后端代码
 │   ├── app/
-│   │   ├── api/            # API 路由
-│   │   ├── core/           # 核心配置
-│   │   ├── crud/           # 数据库操作
-│   │   ├── models/         # 数据模型
-│   │   └── schemas/        # Pydantic 模型
-│   └── requirements.txt
-├── frontend/               # 前端代码
-│   ├── app/               # Next.js 页面
-│   ├── components/        # React 组件
-│   ├── lib/              # 工具函数
+│   │   ├── api/                # API 路由（auth, novels, chapters, merge_requests）
+│   │   ├── core/               # 核心配置（config, database, security）
+│   │   ├── crud/               # 数据库 CRUD 操作
+│   │   ├── models/             # SQLAlchemy 数据模型
+│   │   └── schemas/            # Pydantic 模型
+│   ├── deployconfig/           # 部署配置
+│   │   ├── Dockerfile          # Docker 镜像
+│   │   ├── requirements*.txt   # Python 依赖
+│   │   ├── gunicorn.conf.py   # Gunicorn 配置
+│   │   └── .env.example        # 环境变量模板
+│   └── tests/                  # 测试
+├── frontend/                   # 前端代码
+│   ├── app/                   # Next.js 页面
+│   ├── components/            # React 组件
+│   ├── lib/                   # 工具函数
+│   ├── deployconfig/          # 部署配置
+│   │   ├── Dockerfile         # Docker 镜像
+│   │   └── .env.local.example # 环境变量模板
 │   └── package.json
-├── .gitignore
-└── README.md
+├── deployconfig/               # 部署配置
+│   └── docker/                # Docker 部署
+│       ├── docker-compose.yml # Docker Compose 配置
+│       ├── nginx.conf         # Nginx 配置（负载均衡）
+│       ├── .env.docker.example # 环境变量模板
+│       └── LOAD_BALANCING.md  # 负载均衡说明
+└── docs/                      # 文档
+    ├── development.md         # 开发环境部署
+    ├── production-local.md    # 本地生产环境部署
+    └── production-docker.md   # Docker 生产环境部署
 ```
 
 ## 核心概念
@@ -173,21 +146,43 @@ ai_vision/
 - 被拒绝的分支不能重新提交
 - 只有小说作者可以审核分支提交
 
-## 安全说明
+## 生产部署注意事项
 
-**重要**：在部署到生产环境之前，请务必：
+**重要**：部署到生产环境前请务必：
 
-1. 修改 `.env` 文件中的 `SECRET_KEY` 为强随机密钥
-2. 使用 PostgreSQL 替代 SQLite
-3. 配置 HTTPS
-4. 设置适当的 CORS 策略
-5. 不要将 `.env` 文件提交到版本控制
+1. ✅ 修改 `SECRET_KEY` 和 `POSTGRES_PASSWORD` 为强密码
+2. ✅ 配置 HTTPS（使用 Let's Encrypt）
+3. ✅ 设置适当的 CORS 策略
+4. ✅ 不要将 `.env` 文件提交到版本控制
 
-## 许可证
+> 📖 **详细配置**：[Docker 部署文档](docs/production-docker.md) | [负载均衡配置](deployconfig/docker/LOAD_BALANCING.md)
 
-MIT License
+## 常见问题
+
+更多问题请参考：
+- [Docker 部署文档 - 常见问题](docs/production-docker.md)
+- [开发环境部署 - 常见问题](docs/development.md)
 
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request！
 
+### 开发流程
+
+1. Fork 本仓库
+2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交你的修改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启一个 Pull Request
+
+## 许可证
+
+MIT License
+
+---
+
+**文档**：
+- [开发环境部署](docs/development.md)
+- [本地生产环境部署](docs/production-local.md)
+- [Docker 生产环境部署](docs/production-docker.md)
+- [负载均衡配置](deployconfig/docker/LOAD_BALANCING.md)
