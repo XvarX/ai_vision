@@ -1,0 +1,138 @@
+# PostgreSQL 数据库部署配置
+# 包含：Deployment（管理 Pod） + Service（提供访问入口）
+
+---
+# ==================== Deployment ====================
+# 作用：管理 PostgreSQL 容器的生命周期
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: ai-vision
+  labels:
+    app: postgres
+spec:
+  # 副本数量：数据库通常只运行 1 个副本
+  replicas: 1
+
+  # 选择器：选择标签为 app=postgres 的 Pod
+  selector:
+    matchLabels:
+      app: postgres
+
+  # Pod 模板：定义如何创建 Pod
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      # ==================== 容器配置 ====================
+      containers:
+      - name: postgres
+        # 使用 PostgreSQL 15 镜像
+        image: postgres:15-alpine
+        imagePullPolicy: IfNotPresent
+
+        # 端口配置
+        ports:
+        - name: postgres
+          containerPort: 5432
+          protocol: TCP
+
+        # ==================== 环境变量 ====================
+        env:
+        # 从 ConfigMap 读取配置
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: ai-vision-config
+              key: POSTGRES_USER
+
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ai-vision-config
+              key: POSTGRES_DB
+
+        # 从 Secret 读取密码（安全）
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ai-vision-secret
+              key: POSTGRES_PASSWORD
+
+        # ==================== 存储卷挂载 ====================
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+          subPath: postgres  # 使用子路径，避免覆盖目录
+
+        # ==================== 资源限制 ====================
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+        # ==================== 健康检查 ====================
+        # 存活探针：容器不健康时重启
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - $(POSTGRES_USER)
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # 就绪探针：容器未就绪时不接收流量
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - $(POSTGRES_USER)
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+      # ==================== 存储卷定义 ====================
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc  # 使用前面创建的 PVC
+
+      # ==================== 节点选择（可选）====================
+      # 如果有多个节点，可以选择将数据库部署到特定节点
+      # nodeSelector:
+      #   storage: ssd
+
+---
+# ==================== Service ====================
+# 作用：为 PostgreSQL 提供稳定的访问地址
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: ai-vision
+  labels:
+    app: postgres
+spec:
+  # 服务类型：ClusterIP（集群内部访问）
+  type: ClusterIP
+
+  # 选择器：选择标签为 app=postgres 的 Pod
+  selector:
+    app: postgres
+
+  # 端口映射
+  ports:
+  - name: postgres
+    protocol: TCP
+    port: 5432        # Service 的端口
+    targetPort: 5432  # Pod 的端口

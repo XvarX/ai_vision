@@ -1,0 +1,11 @@
+# Namespace - 命名空间
+# 作用：创建一个独立的逻辑空间，将你的项目与其他项目隔离
+# 类比：就像给你的项目建一个独立的"房间"，不会和其他项目混淆
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-vision
+  labels:
+    name: ai-vision
+    project: ai-vision

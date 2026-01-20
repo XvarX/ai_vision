@@ -1,0 +1,151 @@
+# Backend (FastAPI) 部署配置
+# 包含：Deployment（管理多实例） + Service（负载均衡）
+
+---
+# ==================== Deployment ====================
+# 作用：管理 Backend 容器的生命周期（支持多实例负载均衡）
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: ai-vision
+  labels:
+    app: backend
+spec:
+  # 副本数量：运行 3 个实例（负载均衡）
+  # 可以根据负载情况调整：kubectl scale deployment backend -n ai-vision --replicas=5
+  replicas: 3
+
+  # 选择器：选择标签为 app=backend 的 Pod
+  selector:
+    matchLabels:
+      app: backend
+
+  # Pod 模板：定义如何创建 Pod
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      # ==================== 容器配置 ====================
+      containers:
+      - name: backend
+        # 使用 Docker 构建的镜像
+        # 如果推送到镜像仓库，需要修改为：your-registry/ai-vision-backend:latest
+        image: ai-vision-backend:latest
+        imagePullPolicy: IfNotPresent
+
+        # 端口配置
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+
+        # ==================== 环境变量 ====================
+        env:
+        # 数据库连接（使用 Service 名称）
+        - name: DATABASE_URL
+          value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres-service:5432/$(POSTGRES_DB)
+
+        # 从 ConfigMap 读取配置
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: ai-vision-config
+              key: POSTGRES_USER
+
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ai-vision-config
+              key: POSTGRES_DB
+
+        - name: ALGORITHM
+          valueFrom:
+            configMapKeyRef:
+              name: ai-vision-config
+              key: ALGORITHM
+
+        - name: ACCESS_TOKEN_EXPIRE_MINUTES
+          valueFrom:
+            configMapKeyRef:
+              name: ai-vision-config
+              key: ACCESS_TOKEN_EXPIRE_MINUTES
+
+        # 从 Secret 读取密钥（安全）
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ai-vision-secret
+              key: SECRET_KEY
+
+        # ==================== 资源限制 ====================
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+        # ==================== 健康检查 ====================
+        # 存活探针：容器不健康时重启
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # 就绪探针：容器未就绪时不接收流量
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # 启动探针：慢启动容器的保护
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 30  # 最多等待 150 秒启动
+
+---
+# ==================== Service ====================
+# 作用：为 Backend 提供稳定的访问地址 + 负载均衡
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: ai-vision
+  labels:
+    app: backend
+spec:
+  # 服务类型：ClusterIP（集群内部访问）
+  type: ClusterIP
+
+  # 选择器：选择标签为 app=backend 的 Pod（自动负载均衡到 3 个副本）
+  selector:
+    app: backend
+
+  # 端口映射
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8000        # Service 的端口
+    targetPort: 8000  # Pod 的端口
+
+  # 会话保持（可选）
+  # sessionAffinity: ClientIP
+  # sessionAffinityConfig:
+  #   clientIP:
+  #     timeoutSeconds: 10800  # 3 小时

@@ -1,0 +1,79 @@
+# Ingress - 入口路由配置
+# 作用：定义外部访问规则（类似 Nginx 反向代理）
+# 功能：域名路由、负载均衡、SSL/TLS 终止
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ai-vision-ingress
+  namespace: ai-vision
+  annotations:
+    # 使用 Nginx Ingress Controller
+    kubernetes.io/ingress.class: "nginx"
+
+    # 启用 WebSocket 支持
+    nginx.ingress.kubernetes.io/websocket-services: "backend-service"
+
+    # 客户端请求体大小限制
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+
+    # 超时配置
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+
+    # 启用 CORS（可选）
+    # nginx.ingress.kubernetes.io/enable-cors: "true"
+    # nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+
+    # 限流配置（可选）
+    # nginx.ingress.kubernetes.io/limit-rps: "10"
+
+spec:
+  # ==================== 入口规则 ====================
+  rules:
+  # 主域名（前端）
+  - host: aivision.local  # 修改为你的域名，或者使用 IP
+    http:
+      paths:
+      # 前端路由
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 3000
+
+  # API 子域名（后端）
+  - host: api.aivision.local  # 修改为你的 API 域名
+    http:
+      paths:
+      # 后端 API 路由
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8000
+
+  # ==================== 本地开发（无域名）====================
+  # 如果没有域名，可以使用以下配置（通过 IP 访问）
+  # - http:
+  #     paths:
+  #     - path: /
+  #       pathType: Prefix
+  #       backend:
+  #         service:
+  #           name: frontend-service
+  #           port:
+  #             number: 3000
+
+  # ==================== TLS 配置（HTTPS）====================
+  # 生产环境建议启用 HTTPS
+  # tls:
+  # - hosts:
+  #   - aivision.local
+  #   - api.aivision.local
+  #   secretName: ai-vision-tls  # 需要先创建 TLS Secret

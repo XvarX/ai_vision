@@ -31,6 +31,7 @@
 
 ### 部署
 - Docker & Docker Compose - 容器化部署
+- Kubernetes - 容器编排和自动化管理
 - Nginx - 反向代理和负载均衡
 - 支持多实例扩展和会话保持
 
@@ -45,6 +46,7 @@
 | **开发环境** | ⭐ | 本地开发、学习 | [开发部署文档](docs/development.md) |
 | **本地生产** | ⭐⭐ | 本地服务器、小型部署 | [本地生产部署](docs/production-local.md) |
 | **Docker 部署** | ⭐⭐ | 生产环境、推荐方案 | [Docker 部署文档](docs/production-docker.md) |
+| **K8S 部署** | ⭐⭐⭐ | 大规模生产、云原生 | [K8S 部署文档](docs/production-k8s.md) |
 
 ### 本地开发
 
@@ -110,15 +112,26 @@ ai_vision/
 │   │   └── .env.local.example # 环境变量模板
 │   └── package.json
 ├── deployconfig/               # 部署配置
-│   └── docker/                # Docker 部署
-│       ├── docker-compose.yml # Docker Compose 配置
-│       ├── nginx.conf         # Nginx 配置（负载均衡）
-│       ├── .env.docker.example # 环境变量模板
-│       └── LOAD_BALANCING.md  # 负载均衡说明
+│   ├── docker/                # Docker 部署
+│   │   ├── docker-compose.yml # Docker Compose 配置
+│   │   ├── nginx.conf         # Nginx 配置（负载均衡）
+│   │   ├── .env.docker.example # 环境变量模板
+│   │   └── LOAD_BALANCING.md  # 负载均衡说明
+│   └── k8s/                   # Kubernetes 部署
+│       ├── 00-namespace.yaml  # 命名空间
+│       ├── 01-configmap.yaml  # 配置地图
+│       ├── 02-secret.yaml     # 密钥
+│       ├── 03-pvc.yaml        # 持久卷声明
+│       ├── 04-postgresql.yaml # PostgreSQL 部署
+│       ├── 05-backend.yaml    # Backend 部署
+│       ├── 06-frontend.yaml   # Frontend 部署
+│       ├── 07-ingress.yaml    # Ingress 路由
+│       └── README.md          # K8S 配置说明
 └── docs/                      # 文档
     ├── development.md         # 开发环境部署
     ├── production-local.md    # 本地生产环境部署
-    └── production-docker.md   # Docker 生产环境部署
+    ├── production-docker.md   # Docker 生产环境部署
+    └── production-k8s.md      # K8S 生产环境部署
 ```
 
 ## 核心概念
@@ -155,12 +168,13 @@ ai_vision/
 3. ✅ 设置适当的 CORS 策略
 4. ✅ 不要将 `.env` 文件提交到版本控制
 
-> 📖 **详细配置**：[Docker 部署文档](docs/production-docker.md) | [负载均衡配置](deployconfig/docker/LOAD_BALANCING.md)
+> 📖 **详细配置**：[Docker 部署文档](docs/production-docker.md) | [K8S 部署文档](docs/production-k8s.md) | [负载均衡配置](deployconfig/docker/LOAD_BALANCING.md)
 
 ## 常见问题
 
 更多问题请参考：
 - [Docker 部署文档 - 常见问题](docs/production-docker.md)
+- [K8S 部署文档 - 常见问题](docs/production-k8s.md)
 - [开发环境部署 - 常见问题](docs/development.md)
 
 ## 贡献
@@ -185,4 +199,5 @@ MIT License
 - [开发环境部署](docs/development.md)
 - [本地生产环境部署](docs/production-local.md)
 - [Docker 生产环境部署](docs/production-docker.md)
+- [K8S 生产环境部署](docs/production-k8s.md)
 - [负载均衡配置](deployconfig/docker/LOAD_BALANCING.md)

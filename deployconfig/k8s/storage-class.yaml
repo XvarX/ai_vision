@@ -1,0 +1,15 @@
+# StorageClass - 存储类
+# 作用：定义存储的类型和提供者
+# 说明：Docker Desktop K8S 可能需要手动配置存储类
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"  # 设置为默认存储类
+provisioner: docker.io/hostpath  # Docker Desktop K8S 使用 hostpath
+parameters:
+  type: local
+reclaimPolicy: Delete  # PVC 删除时自动删除存储卷
+volumeBindingMode: Immediate

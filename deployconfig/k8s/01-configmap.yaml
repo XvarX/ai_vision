@@ -1,0 +1,189 @@
+# ConfigMap - 配置地图
+# 作用：存储不敏感的配置信息（环境变量、配置文件等）
+# 优点：配置和代码分离，方便修改，不用重新构建镜像
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-vision-config
+  namespace: ai-vision
+data:
+  # ==================== 环境变量配置 ====================
+  # 数据库配置
+  POSTGRES_USER: "aivision"
+  POSTGRES_DB: "aivision"
+
+  # 后端配置
+  ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "10080"
+
+  # 前端配置
+  NEXT_PUBLIC_API_URL: "http://localhost:8080"
+
+  # ==================== Nginx 配置文件 ====================
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        # ==================== 后端负载均衡配置 ====================
+        upstream backend {
+            # IP 哈希负载均衡策略（会话保持）
+            ip_hash;
+
+            # 后端服务器列表（K8S Service 会自动发现 Pod）
+            server backend-service:8000 max_fails=3 fail_timeout=30s;
+
+            # 保持连接
+            keepalive 32;
+        }
+
+        # ==================== 前端负载均衡配置 ====================
+        upstream frontend {
+            # 最少连接负载均衡策略
+            least_conn;
+
+            # 前端服务器列表
+            server frontend-service:3000 max_fails=3 fail_timeout=30s;
+
+            # 保持连接
+            keepalive 32;
+        }
+
+        # ==================== 限流配置 ====================
+        limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+        limit_req_zone $binary_remote_addr zone=general_limit:10m rate=30r/s;
+
+        # ==================== 后端 API 服务器（8080 端口）====================
+        server {
+            listen 8080;
+            server_name _;
+
+            # 客户端最大请求体大小
+            client_max_body_size 10M;
+
+            # 后端 API 路由
+            location / {
+                # 限流
+                limit_req zone=api_limit burst=20 nodelay;
+
+                # 代理到后端负载均衡池
+                proxy_pass http://backend;
+
+                # 代理头设置
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                # WebSocket 支持
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+
+                # 超时配置
+                proxy_connect_timeout 60s;
+                proxy_send_timeout 60s;
+                proxy_read_timeout 60s;
+            }
+
+            # 后端 API 文档
+            location /docs {
+                proxy_pass http://backend/docs;
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+            }
+
+            location /openapi.json {
+                proxy_pass http://backend/openapi.json;
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+            }
+
+            # 健康检查端点
+            location /health {
+                access_log off;
+                return 200 "backend-healthy\n";
+                add_header Content-Type text/plain;
+            }
+        }
+
+        # ==================== 前端服务器（80 端口）====================
+        server {
+            listen 80;
+            server_name _;
+
+            # 客户端最大请求体大小
+            client_max_body_size 10M;
+
+            # 前端静态资源
+            location / {
+                # 限流
+                limit_req zone=general_limit burst=50 nodelay;
+
+                # 代理到前端负载均衡池
+                proxy_pass http://frontend;
+
+                # 代理头设置
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection 'upgrade';
+                proxy_set_header Host $host;
+                proxy_cache_bypass $http_upgrade;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                # 超时配置
+                proxy_connect_timeout 60s;
+                proxy_send_timeout 60s;
+                proxy_read_timeout 60s;
+            }
+
+            # 通过前端访问后端 API
+            location /api/ {
+                # 限流
+                limit_req zone=api_limit burst=20 nodelay;
+
+                # 代理到后端负载均衡池
+                proxy_pass http://backend/;
+
+                # 代理头设置
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                # WebSocket 支持
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+
+                # 超时配置
+                proxy_connect_timeout 60s;
+                proxy_send_timeout 60s;
+                proxy_read_timeout 60s;
+            }
+
+            # 后端文档（通过前端端口访问）
+            location /docs {
+                proxy_pass http://backend/docs;
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+            }
+
+            location /openapi.json {
+                proxy_pass http://backend/openapi.json;
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+            }
+
+            # 健康检查端点
+            location /health {
+                access_log off;
+                return 200 "frontend-healthy\n";
+                add_header Content-Type text/plain;
+            }
+        }
+    }
