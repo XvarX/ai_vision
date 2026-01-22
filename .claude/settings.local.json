@@ -23,7 +23,12 @@
       "Bash(claude-code skills list:*)",
       "Bash(dir e:spacelabspaceai_visionbackenddeployconfigdocker)",
       "Bash(docker compose:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(wmic:*)",
+      "Bash(powershell:*)",
+      "Bash(dir:*)"
     ]
   }
 }
